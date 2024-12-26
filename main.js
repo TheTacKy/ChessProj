@@ -256,7 +256,7 @@ function getBishopMoves(startingSquareId, pieceColor){
             //if there is someone here and they are not a buddy
             if(squareContent != "blank") 
                 break;
-
+//wooohooo
         }
 
     });
