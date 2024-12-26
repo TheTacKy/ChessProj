@@ -80,6 +80,8 @@ function getPossibleMoves(startingSquareId, piece) {
     } else if (piece.classList.contains("queen")) {
         getRookMoves(startingSquareId, pieceColor);
         getBishopMoves(startingSquareId, pieceColor);
+    } else if (piece.classList.contains("king")) {
+        getKingMoves(startingSquareId, pieceColor);
     }
 }
 
@@ -256,8 +258,46 @@ function getBishopMoves(startingSquareId, pieceColor){
             //if there is someone here and they are not a buddy
             if(squareContent != "blank") 
                 break;
-//wooohooo
         }
 
     });
+}
+
+
+function getKingMoves(startingSquareId, pieceColor) {
+    const file = startingSquareId.charCodeAt(0) - 97; // Convert 'a'-'h' to 0-7
+    const rankNumber = parseInt(startingSquareId.charAt(1)); // 1-8
+
+    const allDirections = [
+        [1,0],
+        [-1,0],
+        [0,1],
+        [0,-1],
+        [1,1],
+        [1,-1],
+        [-1,1],
+        [-1,-1],
+    ];
+
+    for( let i = 0; i < 8; i++) {
+        let currentFile = file;
+        let currentRank = rankNumber;
+
+        currentFile += allDirections[i][0];
+        currentRank += allDirections[i][1];
+
+        if(currentFile < 0 || currentFile > 7  || currentRank < 1 || currentRank > 8) {
+            continue;
+        }
+        const currentSquareId = String.fromCharCode(currentFile + 97) + currentRank;
+        const currentSquare = document.getElementById(currentSquareId);
+        const squareContent = isSquareOccupied(currentSquare);
+
+        if(squareContent == pieceColor)
+            continue;
+        legalSquares.push(currentSquareId);
+
+        if(squareContent != "blank") 
+            continue;
+    }
 }
