@@ -1,0 +1,1 @@
+Simple chess board project using HTML/CSS and JavaScript

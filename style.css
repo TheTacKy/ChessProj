@@ -41,6 +41,7 @@ body{
     font-size: 12px;
     font-weight: bold;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
+    user-select: none;
 }
 
 .rank{
