@@ -66,21 +66,23 @@ function drop(ev){
     
 }
 
-function getPossibleMoves(startingSquareId, piece){
-    
-    const pieceColor=piece.getAttribute("color");
-    if(piece.classList.contains("pawn")){
-        getPawnMoves(startingSquareId, pieceColor);
-    }
-    if(piece.classList.contains("knight")){
-        getKnightMoves(startingSquareId, pieceColor);
-    }
+function getPossibleMoves(startingSquareId, piece) {
+    const pieceColor = piece.getAttribute("color");
 
-    if(piece.classList.contains("rook")){
+    if (piece.classList.contains("pawn")) {
+        getPawnMoves(startingSquareId, pieceColor);
+    } else if (piece.classList.contains("knight")) {
+        getKnightMoves(startingSquareId, pieceColor);
+    } else if (piece.classList.contains("rook")) {
         getRookMoves(startingSquareId, pieceColor);
+    } else if (piece.classList.contains("bishop")) {
+        getBishopMoves(startingSquareId, pieceColor);
+    } else if (piece.classList.contains("queen")) {
+        getRookMoves(startingSquareId, pieceColor);
+        getBishopMoves(startingSquareId, pieceColor);
     }
-    
 }
+
 
 function isSquareOccupied(square){
     if(square.querySelector(".piece")){
@@ -168,6 +170,7 @@ function getKnightMoves(startingSquareId, pieceColor){
     const moves = [
         [-2,1], [-1,2], [1,2], [2,1], [2,-1], [1,-2], [-1, -2], [-2, -1]
     ];
+
     moves.forEach((move) => {
         currentFile = file + move[0];
         currentRank = rankNumber + move[1];
@@ -193,6 +196,9 @@ function getRookMoves(startingSquareId, pieceColor) {
         [1, 0],
         [-1, 0]
     ];
+
+    // use a forEach loop is important because break wont work
+
     directions.forEach((direction) => {
         // set to the roots origin
         let currentFile = file;
@@ -206,12 +212,52 @@ function getRookMoves(startingSquareId, pieceColor) {
             const currentSquareId = String.fromCharCode(currentFile + 97) + currentRank;
             const currentSquare = document.getElementById(currentSquareId);
             const squareContent = isSquareOccupied(currentSquare);
-            
+
+            // if this is a buddy do not add the square
             if (squareContent == pieceColor) break;
             legalSquares.push(currentSquareId);
 
+            //if there is someone here and they are not a buddy
             if (squareContent != "blank") break;
         }
     });
 }
 
+function getBishopMoves(startingSquareId, pieceColor){
+    const file = startingSquareId.charCodeAt(0) - 97; // Convert 'a'-'h' to 0-7
+    const rankNumber = parseInt(startingSquareId.charAt(1)); // 1-8
+
+    const diagonals = [
+        [1,1],
+        [1,-1],
+        [-1,1],
+        [-1,-1],
+    ];
+
+    // for each direction
+    diagonals.forEach((diagonal) => {
+        // origin of piece
+        let currentFile = file;
+        let currentRank = rankNumber;
+        while(true){
+
+            currentFile += diagonal[0];
+            currentRank += diagonal[1];
+            if (currentFile < 0 || currentFile > 7 || currentRank < 1 || currentRank > 8) break;
+            const currentSquareId = String.fromCharCode(currentFile + 97) + currentRank;
+            const currentSquare = document.getElementById(currentSquareId);
+            const squareContent = isSquareOccupied(currentSquare);
+
+            // if this is a buddy do not add the square
+            if(squareContent == pieceColor)
+                break;
+            legalSquares.push(currentSquareId);
+            
+            //if there is someone here and they are not a buddy
+            if(squareContent != "blank") 
+                break;
+
+        }
+
+    });
+}
