@@ -183,17 +183,35 @@ function getKnightMoves(startingSquareId, pieceColor){
 }
 
 function getRookMoves(startingSquareId, pieceColor) {
-    const file=startingSquareId.charAt(0);
-    const rank=startingSquareId.charAt(1);
-    const rankNumber=parseInt(rank);
+    const file = startingSquareId.charCodeAt(0) - 97; // Convert 'a'-'h' to 0-7
+    const rankNumber = parseInt(startingSquareId.charAt(1)); // 1-8
 
-    let currentFile=file;
-    let currentRank=rankNumber;
-    let currentSquareId=currentFile+currentRank;
+    
+    const directions = [
+        [0, 1],
+        [0, -1],
+        [1, 0],
+        [-1, 0]
+    ];
+    directions.forEach((direction) => {
+        // set to the roots origin
+        let currentFile = file;
+        let currentRank = rankNumber;
+        // for each direction from the origin
+        while(true) {
+            currentFile += direction[0];
+            currentRank += direction[1];
+            if (currentFile < 0 || currentFile > 7 || currentRank < 1 || currentRank > 8) break;
 
-    rookDirectionRecursive();
+            const currentSquareId = String.fromCharCode(currentFile + 97) + currentRank;
+            const currentSquare = document.getElementById(currentSquareId);
+            const squareContent = isSquareOccupied(currentSquare);
+            
+            if (squareContent == pieceColor) break;
+            legalSquares.push(currentSquareId);
+
+            if (squareContent != "blank") break;
+        }
+    });
 }
 
-function rookDirectionRecursive() {
-
-}
