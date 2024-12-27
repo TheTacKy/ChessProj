@@ -1,3 +1,5 @@
+let boardSquaresArray = [];
+
 let legalSquares=[];
 let isWhiteTurn = true;
 const boardSquares=document.getElementsByClassName("square");
@@ -6,6 +8,39 @@ const piecesImages=document.getElementsByTagName("img");
 
 setupBoardSquares();
 setupPieces();
+fillBoardSquaresArray();
+
+function fillBoardSquaresArray(){
+    const boardSquares = document.getElementsByClassName("square");
+
+    for(let i = 0; i < boardSquares.length; i++){
+        let row = 8 - Math.floor(i/8);
+        let column = String.fromCharCode(97+(i%8));
+        let square = boardSquares[i];
+        square.id = column + row;
+        let color = ""
+        let pieceType = ""
+        let pieceId = ""
+
+        if(square.querySelector(".piece")) {   
+            color = square.querySelector(".piece").getAttribute("color");
+            pieceType = square.querySelector(".piece").classList[1];
+            pieceId = square.querySelector("piece").id;
+        } else {
+            color = "blank";
+            pieceType="blank";
+            pieceId="blank";
+        }
+        let arrayElement = {
+            squareId: square.id,
+            pieceColor: color,
+            pieceType: pieceType,
+            pieceId: pieceId
+        };
+
+        boardSquaresArray.push(arrayElement);
+    }
+}
 
 function setupBoardSquares(){
     for(let i = 0; i < boardSquares.length; i++){
@@ -35,20 +70,34 @@ function allowDrop(ev){
 function drag(ev){
     const piece=ev.target;
     const pieceColor=piece.getAttribute("color");
+    const pieceType = piece.classList[1];
+    const pieceId = piece.id;
     if((isWhiteTurn && pieceColor=="white") || (!isWhiteTurn && pieceColor=="black")){
-        ev.dataTransfer.setData("text", piece.id);
-        const startingSquareId = piece.parentNode.id
-        getPossibleMoves(startingSquareId, piece);
+        ev.dataTransfer.setData("text", piece.id+"|"+startingSquareId);
+        const pieceObject = {pieceColor:pieceColor, pieceType:pieceType, pieceId: pieceId}
+        let legalSquares = getPossibleMoves(startingSquareId, pieceObject, boardSquaresArray);
+        let legalSquaresJson = JSON.stringify(legalSquares);
+        ev.dataTransfer.setData("application/json", legalSquaresJson);
     }
 }
 
 function drop(ev){
     ev.preventDefault();
     let data=ev.dataTransfer.getData("text");
-    const piece=document.getElementById(data);
-    const destinationSquare=ev.currentTarget;
-    let destinationSquareId=destinationSquare.id;
-    if((isSquareOccupied(destinationSquare) == "blank") && (legalSquares.includes(destinationSquareId)) ){
+    let [pieceId, startingSquareId] = data.split();
+    let legalSquaresJson = ev.dataTransfer.getData("application/json");
+    if(legalSquaresJson.length == 0)
+        return;
+    let legalSquares = JSON.parse(legalSquaresJson);
+
+    const piece = document.getElementById(pieceId);
+    const pieceColor = piece.getAttribute("color");
+    const pieceType = piece.classList[1];
+    const destinationSquare = ev.currentTarget;
+    let destinationSquareId = destinationSquare.id;
+    let squareContent = getPieceAtSquare(destinationSquareId, boardSquaresArray);
+
+    if((squareContent.pieceColor == "blank") && (legalSquares.includes(destinationSquareId)) ){
         destinationSquare.appendChild(piece);
         isWhiteTurn=!isWhiteTurn;
         legalSquares.length=0;
@@ -66,49 +115,61 @@ function drop(ev){
     
 }
 
-function getPossibleMoves(startingSquareId, piece) {
-    const pieceColor = piece.getAttribute("color");
-
-    if (piece.classList.contains("pawn")) {
-        getPawnMoves(startingSquareId, pieceColor);
-    } else if (piece.classList.contains("knight")) {
-        getKnightMoves(startingSquareId, pieceColor);
-    } else if (piece.classList.contains("rook")) {
-        getRookMoves(startingSquareId, pieceColor);
-    } else if (piece.classList.contains("bishop")) {
-        getBishopMoves(startingSquareId, pieceColor);
-    } else if (piece.classList.contains("queen")) {
-        getRookMoves(startingSquareId, pieceColor);
-        getBishopMoves(startingSquareId, pieceColor);
-    } else if (piece.classList.contains("king")) {
-        getKingMoves(startingSquareId, pieceColor);
+function getPossibleMoves(startingSquareId, piece, boardSquaresArray) {
+    const pieceColor = piece.pieceColor;
+    const pieceType = piece.pieceType;
+    let legalSquares = [];
+    if (pieceType == "pawn") {
+        legalSquares = getPawnMoves(startingSquareId, piece, boardSquaresArray);
+        return legalSquares;
+    } else if (pieceType == "knight") {
+        legalSquares = getKnightMoves(startingSquareId, piece, boardSquaresArray);
+        return legalSquares;
+    } else if (pieceType == "rook") {
+        legalSquares = getRookMoves(startingSquareId, piece, boardSquaresArray);
+        return legalSquares;
+    } else if (pieceType == "bishop") {
+        legalSquares = getBishopMoves(startingSquareId, piece, boardSquaresArray);
+        return legalSquares;
+    } else if (pieceType == "queen") {
+        legalSquares = (startingSquareId, piece, boardSquaresArray);
+        return legalSquares;
+    } else if (pieceType == "king") 
+        {
+        getKingMoves(startingSquareId, piece, boardSquaresArray);
+        return legalSquares;
     }
 }
 
 
-function isSquareOccupied(square){
-    if(square.querySelector(".piece")){
-        const color = square.querySelector(".piece").getAttribute("color");
-        return color;
-    } else {
-        return "blank";
-    }
+function isSquareOccupied(squareId, boardSquaresArray){
+    let currentSquare = boardSquaresArray.find((element)=>element.squareId == squareId);
+    const color = currentSquare.pieceColor;
+    const pieceType = currentSquare.pieceType;
+    const pieceId = currentSquarelpieceId;
+    return {pieceColor:color, pieceType:pieceType, pieceId:pieceId}
 }
 
-function getPawnMoves(startingSquareId, pieceColor){
-    checkPawnDiagonalCaptures(startingSquareId, pieceColor);
-    checkPawnForwardMoves(startingSquareId, pieceColor);
+function getPawnMoves(startingSquareId, pieceColor, boardSquaresArray){
+    let diagonalSquares = checkPawnDiagonalCaptures(startingSquareId, pieceColor, boardSquaresArray);
+    let forwardSquares = checkPawnForwardMoves(startingSquareId, pieceColor, boardSquaresArray);
+    let legalSquares = [ ... diagonalSquares, ... forwardSquares];
+
+    return legalSquares;
 }
 
-function checkPawnDiagonalCaptures(startingSquareId, pieceColor){
+function checkPawnDiagonalCaptures(startingSquareId, pieceColor, boardSquaresArray){
     const file=startingSquareId.charAt(0);
     const rank=startingSquareId.charAt(1);
     const rankNumber=parseInt(rank);
     let currentFile=file;
     let currentRank=rankNumber;
     let currentSquareId=currentFile+currentRank;
-    let currentSquare=document.getElementById(currentSquareId);
-    let squareContent=isSquareOccupied(currentSquare);
+
+    let legalSquares = [];
+
+    // let currentSquare=document.getElementById(currentSquareId);
+    // let squareContent=isSquareOccupied(currentSquare);
 
     const direction=pieceColor=="white" ? 1:-1;
     currentRank+=direction;
@@ -117,17 +178,20 @@ function checkPawnDiagonalCaptures(startingSquareId, pieceColor){
     for(let i = -1; i <= 1; i+=2){
         currentFile=String.fromCharCode(file.charCodeAt()+i);
         if(currentFile >= "a" && currentFile <= "h") {
+
             currentSquareId=currentFile+currentRank;
-            currentSquare=document.getElementById(currentSquareId);
-            squareContent=isSquareOccupied(currentSquare);
+            let currentSquare = boardSquaresArray.find((element)=>element.squareId == squareId);
+            const squareContent = currentSquare.pieceColor;
+
             if(squareContent !="blank" && squareContent!=pieceColor){
                 legalSquares.push(currentSquareId);
             }
         }
     }
+    return legalSquares;
 }
 
-function checkPawnForwardMoves(startingSquareId, pieceColor){
+function checkPawnForwardMoves(startingSquareId, pieceColor, boardSquaresArray){
     const file=startingSquareId.charAt(0);
     const rank=startingSquareId.charAt(1);
     const rankNumber=parseInt(rank);
@@ -135,40 +199,43 @@ function checkPawnForwardMoves(startingSquareId, pieceColor){
     let currentFile=file;
     let currentRank=rankNumber;
     let currentSquareId=currentFile+currentRank;
-    let currentSquare=document.getElementById(currentSquareId);
-    let squareContent=isSquareOccupied(currentSquare);
+    let legalSquares = [];
     const direction = pieceColor == "white" ? 1:-1;
 
     currentRank += direction;
     currentSquareId = currentFile + currentRank;
-    currentSquare=document.getElementById(currentSquareId);
-    squareContent=isSquareOccupied(currentSquare);
+    let currentSquare = boardSquaresArray.find((element)=>element.squareId == squareId);
+    let squareContent = currentSquare.pieceColor;
+
     if(squareContent != "blank") 
-        return;
+        return legalSquares;
 
     legalSquares.push(currentSquareId);
 
     if(rankNumber!=2 && rankNumber != 7) 
-        return;
+        return legalSquares;
     
     currentRank+=direction;
     currentSquareId=currentFile+currentRank;
-    currentSquare=document.getElementById(currentSquareId);
-    squareContent=isSquareOccupied(currentSquare);
+
+    currentSquare = boardSquaresArray.find((element)=>element.squareId == squareId);
+    squareContent = currentSquare.pieceColor;
     
 
     if(squareContent != "blank")
-        return;
+        return legalSquares;
     legalSquares.push(currentSquareId);
+
+    return legalSquares;
 }
 
-function getKnightMoves(startingSquareId, pieceColor){
+function getKnightMoves(startingSquareId, pieceColor, boardSquaresArray){
     const file = startingSquareId.charCodeAt(0)-97;
     const rank = startingSquareId.charAt(1);
     const rankNumber = parseInt(rank);
     let currentFile = file;
     let currentRank = rankNumber;
-
+    let legalMoves = [];
     const moves = [
         [-2,1], [-1,2], [1,2], [2,1], [2,-1], [1,-2], [-1, -2], [-2, -1]
     ];
@@ -178,16 +245,17 @@ function getKnightMoves(startingSquareId, pieceColor){
         currentRank = rankNumber + move[1];
         if(currentFile >= 0 && currentFile <= 7 && currentRank > 0 && currentRank <=8){
             let currentSquareId = String.fromCharCode(currentFile+97) + currentRank;
-            let currentSquare = document.getElementById(currentSquareId);
-            let squareContent = isSquareOccupied(currentSquare);
+            let currentSquare = boardSquaresArray.find((element)=>element.squareId == squareId);
+            let squareContent = currentSquare.pieceColor;
             if(squareContent != "blank" && squareContent == pieceColor)
-                return;
+                return legalSquares;
             legalSquares.push(String.fromCharCode(currentFile+97)+currentRank);
         }
     });
+    return legalMoves;
 }
 
-function getRookMoves(startingSquareId, pieceColor) {
+function getRookMoves(startingSquareId, pieceColor, boardSquaresArray) {
     const file = startingSquareId.charCodeAt(0) - 97; // Convert 'a'-'h' to 0-7
     const rankNumber = parseInt(startingSquareId.charAt(1)); // 1-8
 
@@ -212,8 +280,8 @@ function getRookMoves(startingSquareId, pieceColor) {
             if (currentFile < 0 || currentFile > 7 || currentRank < 1 || currentRank > 8) break;
 
             const currentSquareId = String.fromCharCode(currentFile + 97) + currentRank;
-            const currentSquare = document.getElementById(currentSquareId);
-            const squareContent = isSquareOccupied(currentSquare);
+            let currentSquare = boardSquaresArray.find((element)=>element.squareId == squareId);
+            let squareContent = currentSquare.pieceColor;
 
             // if this is a buddy do not add the square
             if (squareContent == pieceColor) break;
@@ -223,9 +291,11 @@ function getRookMoves(startingSquareId, pieceColor) {
             if (squareContent != "blank") break;
         }
     });
+
+    return legalSquares;
 }
 
-function getBishopMoves(startingSquareId, pieceColor){
+function getBishopMoves(startingSquareId, pieceColor, boardSquaresArray){
     const file = startingSquareId.charCodeAt(0) - 97; // Convert 'a'-'h' to 0-7
     const rankNumber = parseInt(startingSquareId.charAt(1)); // 1-8
 
@@ -241,14 +311,15 @@ function getBishopMoves(startingSquareId, pieceColor){
         // origin of piece
         let currentFile = file;
         let currentRank = rankNumber;
+        legalSquares = [];
         while(true){
 
             currentFile += diagonal[0];
             currentRank += diagonal[1];
             if (currentFile < 0 || currentFile > 7 || currentRank < 1 || currentRank > 8) break;
             const currentSquareId = String.fromCharCode(currentFile + 97) + currentRank;
-            const currentSquare = document.getElementById(currentSquareId);
-            const squareContent = isSquareOccupied(currentSquare);
+            let currentSquare = boardSquaresArray.find((element)=>element.squareId == squareId);
+            let squareContent = currentSquare.pieceColor;
 
             // if this is a buddy do not add the square
             if(squareContent == pieceColor)
@@ -261,10 +332,20 @@ function getBishopMoves(startingSquareId, pieceColor){
         }
 
     });
+    return legalSquares;
 }
 
 
-function getKingMoves(startingSquareId, pieceColor) {
+
+function getQueenMoves(startingSquareId, pieceColor, boardSquaresArray) {
+    let bishopSquares = getBishopMoves(startingSquareId, pieceColor, boardSquaresArray);
+    let rookSquares = getRookMoves(startingSquareId, pieceColor, boardSquaresArray);
+    let legalSquares = [ ... bishopSquares, ... rookSquares];
+
+    return legalSquares;
+}
+
+function getKingMoves(startingSquareId, pieceColor, boardSquaresArray) {
     const file = startingSquareId.charCodeAt(0) - 97; // Convert 'a'-'h' to 0-7
     const rankNumber = parseInt(startingSquareId.charAt(1)); // 1-8
 
@@ -290,8 +371,8 @@ function getKingMoves(startingSquareId, pieceColor) {
             continue;
         }
         const currentSquareId = String.fromCharCode(currentFile + 97) + currentRank;
-        const currentSquare = document.getElementById(currentSquareId);
-        const squareContent = isSquareOccupied(currentSquare);
+        let currentSquare = boardSquaresArray.find((element)=>element.squareId == squareId);
+        let squareContent = currentSquare.pieceColor;
 
         if(squareContent == pieceColor)
             continue;
@@ -300,4 +381,7 @@ function getKingMoves(startingSquareId, pieceColor) {
         if(squareContent != "blank") 
             continue;
     }
+
+    return legalSquares;
 }
+
